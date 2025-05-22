@@ -12,6 +12,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var lastTx: UInt64 = 0
     var statusItem: NSStatusItem?
 
+    /// 应用启动后初始化窗口、菜单栏、定时器等
+    /// - 参数 notification: 启动通知
     func applicationDidFinishLaunching(_ notification: Notification) {
         // 菜单栏图标和菜单
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -52,6 +54,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         updateAll()
     }
 
+    /// 定时刷新所有监控数据（时间、网速、CPU、内存），并更新界面
     @MainActor
     @objc func updateAll() {
         // 时间
@@ -78,9 +81,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // 全系统CPU使用率
         speedPanel.cpuUsage = SystemMonitor.getSystemCPUUsage()
+        // 内存监控
+        let (_, used) = SystemMonitor.getMemoryInfo()
+        let gb = 1024.0 * 1024.0 * 1024.0
+        let usedGB = Double(used) / gb
+        speedPanel.memoryUsage = String(format: "%.2f GB", usedGB)
         speedPanel.needsDisplay = true
     }
 
+    /// 显示"关于"弹窗，展示应用名称和版本号
     @MainActor
     @objc func showAbout() {
         let alert = NSAlert()
@@ -90,12 +99,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.runModal()
     }
 
+    /// 优雅退出应用
     @MainActor
     @objc func quitApp() {
         NSApplication.shared.terminate(self)
     }
 }
 
+/// 应用主入口，初始化 NSApplication 并启动事件循环
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate
