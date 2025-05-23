@@ -53,7 +53,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.ignoresMouseEvents = true // 缺省穿透
         window.isMovableByWindowBackground = true
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        window.makeKeyAndOrderFront(nil)
+        window.orderFront(nil)
 
         speedPanel = SpeedPanelView(frame: NSRect(x: 0, y: 0, width: width, height: height))
         window.contentView = speedPanel
@@ -134,7 +134,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if window.isVisible {
             window.orderOut(nil)
         } else {
-            window.makeKeyAndOrderFront(nil)
+            window.orderFront(nil)
         }
     }
 }
