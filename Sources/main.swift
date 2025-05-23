@@ -1,5 +1,6 @@
 import Cocoa
 import Foundation
+import HotKey
 
 let appVersion = "1.0.2"
 let appName = "NetworkSpeedMonitor"
@@ -11,6 +12,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var lastRx: UInt64 = 0
     var lastTx: UInt64 = 0
     var statusItem: NSStatusItem?
+    var penetrateMenuItem: NSMenuItem!
+    var isPenetrate: Bool = true // 缺省穿透
+    var hotKey: HotKey? // 全局快捷键
 
     /// 应用启动后初始化窗口、菜单栏、定时器等
     /// - 参数 notification: 启动通知
@@ -25,6 +29,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         let menu = NSMenu()
+        // 穿透菜单项
+        penetrateMenuItem = NSMenuItem(title: "穿透", action: #selector(togglePenetrate), keyEquivalent: "t")
+        penetrateMenuItem.state = .on
+        menu.addItem(penetrateMenuItem)
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "关于", action: #selector(showAbout), keyEquivalent: "i"))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "退出", action: #selector(quitApp), keyEquivalent: "q"))
@@ -41,7 +50,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.isOpaque = false
         window.backgroundColor = .clear
         window.hasShadow = true
-        window.ignoresMouseEvents = false
+        window.ignoresMouseEvents = true // 缺省穿透
         window.isMovableByWindowBackground = true
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.makeKeyAndOrderFront(nil)
@@ -52,6 +61,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         (lastRx, lastTx) = SystemMonitor.getNetworkBytes()
         timer = Timer.scheduledTimer(timeInterval: 3.0, target: self, selector: #selector(updateAll), userInfo: nil, repeats: true)
         updateAll()
+
+        // 注册全局快捷键 control+option+command+t
+        hotKey = HotKey(key: .t, modifiers: [.control, .option, .command])
+        hotKey?.keyDownHandler = { [weak self] in
+            self?.toggleWindowVisibility()
+        }
     }
 
     /// 定时刷新所有监控数据（时间、网速、CPU、内存），并更新界面
@@ -103,6 +118,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor
     @objc func quitApp() {
         NSApplication.shared.terminate(self)
+    }
+
+    /// 切换穿透状态
+    @MainActor
+    @objc func togglePenetrate() {
+        isPenetrate.toggle()
+        window.ignoresMouseEvents = isPenetrate
+        penetrateMenuItem.state = isPenetrate ? .on : .off
+    }
+
+    /// 切换窗口显示/隐藏
+    @MainActor
+    func toggleWindowVisibility() {
+        if window.isVisible {
+            window.orderOut(nil)
+        } else {
+            window.makeKeyAndOrderFront(nil)
+        }
     }
 }
 

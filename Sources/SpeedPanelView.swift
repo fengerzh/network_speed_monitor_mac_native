@@ -9,7 +9,7 @@ class SpeedPanelView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         // 背景
-        let bgColor = NSColor(calibratedWhite: 0.08, alpha: 0.85)
+        let bgColor = NSColor(calibratedWhite: 0.08, alpha: 0.5)
         bgColor.setFill()
         let path = NSBezierPath(roundedRect: bounds, xRadius: 12, yRadius: 12)
         path.fill()
