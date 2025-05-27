@@ -6,6 +6,7 @@ class SpeedPanelView: NSView {
     var uploadSpeed: String = "--"
     var cpuUsage: String = "--"
     var memoryUsage: String = "--"
+    var showCoffee: Bool = false
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         // 背景
@@ -30,49 +31,78 @@ class SpeedPanelView: NSView {
         let startY: CGFloat = bounds.height - 28
         let lineSpacing: CGFloat = 28
         // 时间
-        let timeTitle = NSAttributedString(string: "时间", attributes: titleAttrs)
-        let timeValue = NSAttributedString(string: timeString, attributes: valueAttrs)
-        timeTitle.draw(at: NSPoint(x: 16, y: startY))
-        timeValue.draw(at: NSPoint(x: 80, y: startY))
-        // 下载
-        let downloadTitle = NSAttributedString(string: "下载", attributes: titleAttrs)
-        let (downloadNum, downloadUnit) = SpeedPanelView.splitValueAndUnit(downloadSpeed)
-        let downloadValue = NSAttributedString(string: downloadNum, attributes: valueAttrs)
-        let downloadUnitStr = NSAttributedString(string: downloadUnit, attributes: unitAttrs)
-        downloadTitle.draw(at: NSPoint(x: 16, y: startY - lineSpacing))
-        let downloadValuePoint = NSPoint(x: 80, y: startY - lineSpacing)
-        downloadValue.draw(at: downloadValuePoint)
-        let downloadUnitPoint = NSPoint(x: 80 + downloadValue.size().width + 2, y: startY - lineSpacing + 3)
-        downloadUnitStr.draw(at: downloadUnitPoint)
-        // 上传
-        let uploadTitle = NSAttributedString(string: "上传", attributes: titleAttrs)
-        let (uploadNum, uploadUnit) = SpeedPanelView.splitValueAndUnit(uploadSpeed)
-        let uploadValue = NSAttributedString(string: uploadNum, attributes: valueAttrs)
-        let uploadUnitStr = NSAttributedString(string: uploadUnit, attributes: unitAttrs)
-        uploadTitle.draw(at: NSPoint(x: 16, y: startY - 2*lineSpacing))
-        let uploadValuePoint = NSPoint(x: 80, y: startY - 2*lineSpacing)
-        uploadValue.draw(at: uploadValuePoint)
-        let uploadUnitPoint = NSPoint(x: 80 + uploadValue.size().width + 2, y: startY - 2*lineSpacing + 3)
-        uploadUnitStr.draw(at: uploadUnitPoint)
+        let timeFont = NSFont.monospacedDigitSystemFont(ofSize: 20, weight: .bold)
+        let timeColor = NSColor.systemOrange
+        let timeAttrs: [NSAttributedString.Key: Any] = [
+            .font: timeFont,
+            .foregroundColor: timeColor
+        ]
+        let timeValue = NSAttributedString(string: timeString, attributes: timeAttrs)
+        var totalWidth = timeValue.size().width
+        var coffeeSize = CGSize.zero
+        if showCoffee {
+            let coffeeText = "☕️"
+            let coffeeAttrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 20, weight: .medium),
+                .foregroundColor: timeColor
+            ]
+            coffeeSize = coffeeText.size(withAttributes: coffeeAttrs)
+            totalWidth += coffeeSize.width + 6
+        }
+        let centerX = (bounds.width - totalWidth) / 2
+        let timeY = startY
+        timeValue.draw(at: NSPoint(x: centerX, y: timeY))
+        if showCoffee {
+            let coffeeText = "☕️"
+            let coffeeAttrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 20, weight: .medium),
+                .foregroundColor: timeColor
+            ]
+            let coffeeX = centerX + timeValue.size().width + 6
+            let coffeeY = timeY + (timeValue.size().height - coffeeSize.height) / 2
+            coffeeText.draw(at: NSPoint(x: coffeeX, y: coffeeY), withAttributes: coffeeAttrs)
+        }
+        // 下载/上传合并一行
+        let downloadStr = NSAttributedString(string: downloadSpeed, attributes: valueAttrs)
+        let uploadStr = NSAttributedString(string: uploadSpeed, attributes: valueAttrs)
+        let arrowAttrs = titleAttrs
+        let arrowDown = NSAttributedString(string: "⬇️", attributes: arrowAttrs)
+        let arrowUp = NSAttributedString(string: "⬆️", attributes: arrowAttrs)
+        // 计算整体宽度
+        let spacing: CGFloat = 8
+        let slash = NSAttributedString(string: "/", attributes: valueAttrs)
+        let speedRowWidth = arrowDown.size().width + spacing + downloadStr.size().width + spacing + slash.size().width + spacing + uploadStr.size().width + spacing + arrowUp.size().width
+        let baseY = startY - lineSpacing
+        let baseX = (bounds.width - speedRowWidth) / 2
+        var x = baseX
+        arrowDown.draw(at: NSPoint(x: x, y: baseY))
+        x += arrowDown.size().width + spacing
+        downloadStr.draw(at: NSPoint(x: x, y: baseY))
+        x += downloadStr.size().width + spacing
+        slash.draw(at: NSPoint(x: x, y: baseY))
+        x += slash.size().width + spacing
+        uploadStr.draw(at: NSPoint(x: x, y: baseY))
+        x += uploadStr.size().width + spacing
+        arrowUp.draw(at: NSPoint(x: x, y: baseY))
         // CPU
         let cpuTitle = NSAttributedString(string: "CPU", attributes: titleAttrs)
         let (cpuNum, cpuUnit) = SpeedPanelView.splitValueAndUnit(cpuUsage + "%")
         let cpuValue = NSAttributedString(string: cpuNum, attributes: valueAttrs)
         let cpuUnitStr = NSAttributedString(string: cpuUnit, attributes: unitAttrs)
-        cpuTitle.draw(at: NSPoint(x: 16, y: startY - 3*lineSpacing))
-        let cpuValuePoint = NSPoint(x: 80, y: startY - 3*lineSpacing)
+        cpuTitle.draw(at: NSPoint(x: 16, y: startY - 2*lineSpacing))
+        let cpuValuePoint = NSPoint(x: 80, y: startY - 2*lineSpacing)
         cpuValue.draw(at: cpuValuePoint)
-        let cpuUnitPoint = NSPoint(x: 80 + cpuValue.size().width + 2, y: startY - 3*lineSpacing + 3)
+        let cpuUnitPoint = NSPoint(x: 80 + cpuValue.size().width + 2, y: startY - 2*lineSpacing + 3)
         cpuUnitStr.draw(at: cpuUnitPoint)
         // 内存
         let memTitle = NSAttributedString(string: "内存", attributes: titleAttrs)
         let (memNum, memUnit) = SpeedPanelView.splitValueAndUnit(memoryUsage)
         let memValue = NSAttributedString(string: memNum, attributes: valueAttrs)
         let memUnitStr = NSAttributedString(string: memUnit, attributes: unitAttrs)
-        memTitle.draw(at: NSPoint(x: 16, y: startY - 4*lineSpacing))
-        let memValuePoint = NSPoint(x: 80, y: startY - 4*lineSpacing)
+        memTitle.draw(at: NSPoint(x: 16, y: startY - 3*lineSpacing))
+        let memValuePoint = NSPoint(x: 80, y: startY - 3*lineSpacing)
         memValue.draw(at: memValuePoint)
-        let memUnitPoint = NSPoint(x: 80 + memValue.size().width + 2, y: startY - 4*lineSpacing + 3)
+        let memUnitPoint = NSPoint(x: 80 + memValue.size().width + 2, y: startY - 3*lineSpacing + 3)
         memUnitStr.draw(at: memUnitPoint)
     }
     /// 拆分数值和单位（如 "12.34 MB/s" -> ("12.34", "MB/s")）

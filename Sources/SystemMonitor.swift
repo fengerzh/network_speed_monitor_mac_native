@@ -79,16 +79,18 @@ class SystemMonitor {
         return (rx, tx)
     }
 
-    /// 格式化速度数值为带单位的字符串（B/s、KB/s、MB/s）。
+    /// 格式化速度数值为带单位的字符串（只保留G、M、K单位）。
     /// - 参数 speed: 速度（字节/秒，Double）。
-    /// - 返回：格式化后的字符串（如 "123 B/s"、"1.23 KB/s"、"2.34 MB/s"）。
+    /// - 返回：格式化后的字符串（如 "1.23G"、"2.34M"、"512K"，无B/s）。
     static func formatSpeed(_ speed: Double) -> String {
-        if speed < 1024 {
-            return String(format: "%.0f B/s", speed)
-        } else if speed < 1024 * 1024 {
-            return String(format: "%.2f KB/s", speed / 1024)
+        if speed >= 1024 * 1024 * 1024 {
+            return String(format: "%.2fG", speed / 1024 / 1024 / 1024)
+        } else if speed >= 1024 * 1024 {
+            return String(format: "%.2fM", speed / 1024 / 1024)
+        } else if speed >= 1024 {
+            return String(format: "%.0fK", speed / 1024)
         } else {
-            return String(format: "%.2f MB/s", speed / 1024 / 1024)
+            return "0"
         }
     }
 

@@ -1,6 +1,7 @@
 import Cocoa
 import Foundation
 import HotKey
+import IOKit.pwr_mgt
 
 let appVersion = "1.0.2"
 let appName = "NetworkSpeedMonitor"
@@ -15,6 +16,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var penetrateMenuItem: NSMenuItem!
     var isPenetrate: Bool = true // 缺省穿透
     var hotKey: HotKey? // 全局快捷键
+    var coffeeHotKey: HotKey? // 新增：咖啡模式快捷键
+    var coffeeMenuItem: NSMenuItem! // 新增
+    var coffeeAssertionID: IOPMAssertionID = 0 // 新增
 
     /// 应用启动后初始化窗口、菜单栏、定时器等
     /// - 参数 notification: 启动通知
@@ -33,6 +37,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         penetrateMenuItem = NSMenuItem(title: "穿透", action: #selector(togglePenetrate), keyEquivalent: "t")
         penetrateMenuItem.state = .on
         menu.addItem(penetrateMenuItem)
+        // 新增咖啡菜单项
+        coffeeMenuItem = NSMenuItem(title: "咖啡", action: #selector(toggleCoffee), keyEquivalent: "k")
+        coffeeMenuItem.state = .off
+        menu.addItem(coffeeMenuItem)
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "关于", action: #selector(showAbout), keyEquivalent: "i"))
         menu.addItem(NSMenuItem.separator())
@@ -66,6 +74,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hotKey = HotKey(key: .t, modifiers: [.control, .option, .command])
         hotKey?.keyDownHandler = { [weak self] in
             self?.toggleWindowVisibility()
+        }
+        // 注册全局快捷键 control+option+command+k 切换咖啡模式
+        coffeeHotKey = HotKey(key: .k, modifiers: [.control, .option, .command])
+        coffeeHotKey?.keyDownHandler = { [weak self] in
+            self?.toggleCoffee()
         }
     }
 
@@ -114,9 +127,39 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.runModal()
     }
 
+    /// 切换咖啡模式，防止/允许电脑睡眠
+    @MainActor
+    @objc func toggleCoffee() {
+        if coffeeMenuItem.state == .off {
+            // 开启咖啡模式，防止睡眠
+            let reasonForActivity = "保持清醒，防止电脑睡眠" as CFString
+            let result = IOPMAssertionCreateWithName(
+                kIOPMAssertionTypePreventSystemSleep as CFString,
+                IOPMAssertionLevel(kIOPMAssertionLevelOn),
+                reasonForActivity,
+                &coffeeAssertionID
+            )
+            if result == kIOReturnSuccess {
+                coffeeMenuItem.state = .on
+                speedPanel.showCoffee = true
+                speedPanel.needsDisplay = true
+            }
+        } else {
+            // 关闭咖啡模式，允许睡眠
+            IOPMAssertionRelease(coffeeAssertionID)
+            coffeeMenuItem.state = .off
+            speedPanel.showCoffee = false
+            speedPanel.needsDisplay = true
+        }
+    }
+
     /// 优雅退出应用
     @MainActor
     @objc func quitApp() {
+        // 退出时如有必要释放 Assertion
+        if coffeeMenuItem != nil && coffeeMenuItem.state == .on {
+            IOPMAssertionRelease(coffeeAssertionID)
+        }
         NSApplication.shared.terminate(self)
     }
 
