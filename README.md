@@ -18,11 +18,15 @@
 - 代码结构清晰，易于维护和扩展
 
 ## 安装与使用
-1. 编译并打包为 .app 应用（见 main.swift 注释或本项目 issue 区）
-2. 将 `NetworkSpeedMonitor.app` 复制到 `/Applications/`
-3. 双击启动，或在 Launchpad/应用程序中启动
-4. 可通过菜单栏"穿透"切换窗口是否响应鼠标，或用全局快捷键随时显示/隐藏窗口
-5. 可通过菜单栏或快捷键一键开启/关闭咖啡模式，防止电脑进入睡眠，悬浮窗有提示
+
+1. **推荐方式：** 直接前往 [Releases 页面](https://github.com/fengerzh/network_speed_monitor_mac_native/releases) 下载最新版 DMG 安装包，双击挂载后将 NetworkSpeedMonitor 拖入 Applications 即可。
+
+2. **开发者方式：** 如需自行编译，可参考下列步骤：
+   - 编译并打包为 .app 应用（见 main.swift 注释或本项目 issue 区）
+   - 将 `NetworkSpeedMonitor.app` 复制到 `/Applications/`
+   - 双击启动，或在 Launchpad/应用程序中启动
+   - 可通过菜单栏"穿透"切换窗口是否响应鼠标，或用全局快捷键随时显示/隐藏窗口
+   - 可通过菜单栏或快捷键一键开启/关闭咖啡模式，防止电脑进入睡眠，悬浮窗有提示
 
 ## 关于
 - 软件名称：NetworkSpeedMonitor

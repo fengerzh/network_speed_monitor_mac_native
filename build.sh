@@ -8,6 +8,7 @@ APP_DIR="${APP_NAME}.app"
 CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
 RES_DIR="${CONTENTS_DIR}/Resources"
+VERSION="1.0.3" # 版本号
 
 # 清理旧包
 rm -rf "${APP_DIR}"
@@ -29,5 +30,16 @@ cp "Sources/Resources/netspeed_menu.png" "${RES_DIR}/"
 # 拷贝 Info.plist
 cp "Sources/Info.plist" "${CONTENTS_DIR}/"
 
+# 自动写入版本号
+PLIST="${CONTENTS_DIR}/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$PLIST" 2>/dev/null || \
+/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $VERSION" "$PLIST"
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" "$PLIST"
+
 echo "✅ 打包完成：${APP_DIR}"
-echo "你可以用 cp -R ${APP_DIR} /Applications/ 进行安装" 
+echo "你可以用 cp -R ${APP_DIR} /Applications/ 进行安装"
+
+# 生成 DMG 安装包
+DMG_NAME="${APP_NAME} ${VERSION}.dmg"
+create-dmg "${APP_DIR}" --overwrite --out="."
+echo "✅ DMG 安装包已生成：$DMG_NAME" 
