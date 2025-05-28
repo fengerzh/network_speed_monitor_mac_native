@@ -13,12 +13,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var lastRx: UInt64 = 0
     var lastTx: UInt64 = 0
     var statusItem: NSStatusItem?
-    var penetrateMenuItem: NSMenuItem!
-    var isPenetrate: Bool = true // 缺省穿透
     var hotKey: HotKey? // 全局快捷键
-    var coffeeHotKey: HotKey? // 新增：咖啡模式快捷键
-    var coffeeMenuItem: NSMenuItem! // 新增
-    var coffeeAssertionID: IOPMAssertionID = 0 // 新增
+    var coffeeHotKey: HotKey? // 咖啡模式快捷键
+    var coffeeMenuItem: NSMenuItem! // 咖啡菜单项
+    var coffeeAssertionID: IOPMAssertionID = 0 // 咖啡模式 Assertion
+    var globalMouseMonitor: Any?
 
     /// 应用启动后初始化窗口、菜单栏、定时器等
     /// - 参数 notification: 启动通知
@@ -33,11 +32,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         let menu = NSMenu()
-        // 穿透菜单项
-        penetrateMenuItem = NSMenuItem(title: "穿透", action: #selector(togglePenetrate), keyEquivalent: "t")
-        penetrateMenuItem.state = .on
-        menu.addItem(penetrateMenuItem)
-        // 新增咖啡菜单项
+        // 仅保留咖啡、关于、退出
         coffeeMenuItem = NSMenuItem(title: "咖啡", action: #selector(toggleCoffee), keyEquivalent: "k")
         coffeeMenuItem.state = .off
         menu.addItem(coffeeMenuItem)
@@ -50,7 +45,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let width: CGFloat = 180
         let height: CGFloat = 140
         let screenSize = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 400, height: 100)
-        let windowSize = NSRect(x: screenSize.width - width - 20, y: screenSize.height - height - 40, width: width, height: height)
+        // 固定在屏幕最右上角
+        let windowSize = NSRect(x: screenSize.width - width - 10, y: screenSize.height - height - 10, width: width, height: height)
         window = NSWindow(contentRect: windowSize,
                           styleMask: [.borderless],
                           backing: .buffered, defer: false)
@@ -58,12 +54,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.isOpaque = false
         window.backgroundColor = .clear
         window.hasShadow = true
-        window.ignoresMouseEvents = true // 缺省穿透
-        window.isMovableByWindowBackground = true
+        window.isMovable = false // 禁止拖动
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.orderFront(nil)
 
         speedPanel = SpeedPanelView(frame: NSRect(x: 0, y: 0, width: width, height: height))
+        speedPanel.onMouseEntered = { [weak self] in
+            self?.hideWindowOnHover()
+        }
         window.contentView = speedPanel
 
         (lastRx, lastTx) = SystemMonitor.getNetworkBytes()
@@ -80,6 +78,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         coffeeHotKey?.keyDownHandler = { [weak self] in
             self?.toggleCoffee()
         }
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(adjustWindowPosition),
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: nil
+        )
+        adjustWindowPosition()
     }
 
     /// 定时刷新所有监控数据（时间、网速、CPU、内存），并更新界面
@@ -163,12 +169,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.terminate(self)
     }
 
-    /// 切换穿透状态
+    /// 鼠标悬停时隐藏窗口，移开后自动显示
     @MainActor
-    @objc func togglePenetrate() {
-        isPenetrate.toggle()
-        window.ignoresMouseEvents = isPenetrate
-        penetrateMenuItem.state = isPenetrate ? .on : .off
+    func hideWindowOnHover() {
+        window.orderOut(nil)
+        // 注册全局鼠标移动监听
+        globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
+            guard let self = self else { return }
+            let mouseLocation = NSEvent.mouseLocation
+            Task { @MainActor in
+                let windowFrame = self.window.frame
+                // 鼠标离开原窗口区域
+                if !windowFrame.contains(mouseLocation) {
+                    self.window.orderFront(nil)
+                    if let monitor = self.globalMouseMonitor {
+                        NSEvent.removeMonitor(monitor)
+                        self.globalMouseMonitor = nil
+                    }
+                }
+            }
+        }
     }
 
     /// 切换窗口显示/隐藏
@@ -178,6 +198,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             window.orderOut(nil)
         } else {
             window.orderFront(nil)
+        }
+    }
+
+    /// 自动将窗口吸附到主屏幕右上角
+    @objc
+    @MainActor
+    func adjustWindowPosition() {
+        let width: CGFloat = window.frame.width
+        let height: CGFloat = window.frame.height
+        if let screen = NSScreen.main {
+            let x = screen.frame.maxX - width - 10
+            let y = screen.frame.maxY - height - 10
+            window.setFrameOrigin(NSPoint(x: x, y: y))
         }
     }
 }

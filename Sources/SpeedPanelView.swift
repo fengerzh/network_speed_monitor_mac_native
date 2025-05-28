@@ -7,6 +7,8 @@ class SpeedPanelView: NSView {
     var cpuUsage: String = "--"
     var memoryUsage: String = "--"
     var showCoffee: Bool = false
+    var onMouseEntered: (() -> Void)?
+    private var trackingArea: NSTrackingArea?
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         // 背景
@@ -121,5 +123,18 @@ class SpeedPanelView: NSView {
             return (num, unit)
         }
         return (value, "")
+    }
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let area = trackingArea {
+            self.removeTrackingArea(area)
+        }
+        let options: NSTrackingArea.Options = [.mouseEnteredAndExited, .activeAlways, .inVisibleRect]
+        let area = NSTrackingArea(rect: self.bounds, options: options, owner: self, userInfo: nil)
+        self.addTrackingArea(area)
+        trackingArea = area
+    }
+    override func mouseEntered(with event: NSEvent) {
+        onMouseEntered?()
     }
 } 

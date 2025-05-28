@@ -5,6 +5,9 @@ import PackageDescription
 
 let package = Package(
     name: "network_speed_monitor_mac_native",
+    platforms: [
+        .macOS(.v10_15)
+    ],
     dependencies: [
         .package(url: "https://github.com/soffes/HotKey.git", from: "0.1.2")
     ],
