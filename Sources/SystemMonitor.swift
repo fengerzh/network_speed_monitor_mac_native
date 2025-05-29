@@ -1,5 +1,6 @@
 import Foundation
 import SystemConfiguration
+import IOKit.ps
 
 class SystemMonitor {
     /// 记录上一次全系统 CPU 各核的 tick 计数，用于计算 CPU 占用率的差分。
@@ -119,5 +120,24 @@ class SystemMonitor {
             used = active + wired + compressed
         }
         return (total, used)
+    }
+
+    /// 获取当前电池电量百分比（如 87），若无电池则返回 "--"。
+    static func getBatteryLevel() -> String {
+        guard let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+              let sources = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef] else {
+            return "--"
+        }
+        for ps in sources {
+            if let info = IOPSGetPowerSourceDescription(snapshot, ps)?.takeUnretainedValue() as? [String: Any] {
+                if let capacity = info[kIOPSCurrentCapacityKey as String] as? Int,
+                   let max = info[kIOPSMaxCapacityKey as String] as? Int {
+                    if max > 0 {
+                        return String(Int(Double(capacity) / Double(max) * 100))
+                    }
+                }
+            }
+        }
+        return "--"
     }
 }

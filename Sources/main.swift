@@ -120,6 +120,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let gb = 1024.0 * 1024.0 * 1024.0
         let usedGB = Double(used) / gb
         speedPanel.memoryUsage = String(format: "%.2f GB", usedGB)
+        // 电池电量
+        speedPanel.batteryLevel = SystemMonitor.getBatteryLevel()
         speedPanel.needsDisplay = true
     }
 

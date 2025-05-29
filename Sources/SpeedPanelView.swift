@@ -6,6 +6,7 @@ class SpeedPanelView: NSView {
     var uploadSpeed: String = "--"
     var cpuUsage: String = "--"
     var memoryUsage: String = "--"
+    var batteryLevel: String = "--"
     var showCoffee: Bool = false
     var onMouseEntered: (() -> Void)?
     private var trackingArea: NSTrackingArea?
@@ -106,6 +107,12 @@ class SpeedPanelView: NSView {
         memValue.draw(at: memValuePoint)
         let memUnitPoint = NSPoint(x: 80 + memValue.size().width + 2, y: startY - 3*lineSpacing + 3)
         memUnitStr.draw(at: memUnitPoint)
+        // 电池电量
+        let batteryTitle = NSAttributedString(string: "电量", attributes: titleAttrs)
+        let batteryValue = NSAttributedString(string: batteryLevel + "%", attributes: valueAttrs)
+        batteryTitle.draw(at: NSPoint(x: 16, y: startY - 4*lineSpacing))
+        let batteryValuePoint = NSPoint(x: 80, y: startY - 4*lineSpacing)
+        batteryValue.draw(at: batteryValuePoint)
     }
     /// 拆分数值和单位（如 "12.34 MB/s" -> ("12.34", "MB/s")）
     static func splitValueAndUnit(_ value: String) -> (String, String) {

@@ -8,7 +8,9 @@ APP_DIR="${APP_NAME}.app"
 CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
 RES_DIR="${CONTENTS_DIR}/Resources"
-VERSION="1.0.3" # 版本号
+
+# 读取版本号
+VERSION=$(cat VERSION)
 
 # 清理旧包
 rm -rf "${APP_DIR}"
@@ -27,10 +29,11 @@ cp .build/release/network_speed_monitor_mac_native "${MACOS_DIR}/${APP_NAME}"
 cp "Sources/Resources/netspeed.icns" "${RES_DIR}/"
 cp "Sources/Resources/netspeed_menu.png" "${RES_DIR}/"
 
-# 拷贝 Info.plist
-cp "Sources/Info.plist" "${CONTENTS_DIR}/"
+# 处理 Info.plist 版本号占位符
+cp "Sources/Info.plist" "${CONTENTS_DIR}/Info.plist"
+sed -i '' "s/@VERSION@/${VERSION}/g" "${CONTENTS_DIR}/Info.plist"
 
-# 自动写入版本号
+# 自动写入版本号（冗余保险）
 PLIST="${CONTENTS_DIR}/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$PLIST" 2>/dev/null || \
 /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $VERSION" "$PLIST"
