@@ -17,6 +17,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var coffeeHotKey: HotKey? // 咖啡模式快捷键
     var coffeeMenuItem: NSMenuItem! // 咖啡菜单项
     var coffeeAssertionID: IOPMAssertionID = 0 // 咖啡模式 Assertion
+    var coffeeDisplayAssertionID: IOPMAssertionID = 0 // 阻止显示器休眠 Assertion
     var globalMouseMonitor: Any?
 
     /// 应用启动后初始化窗口、菜单栏、定时器等
@@ -135,26 +136,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.runModal()
     }
 
-    /// 切换咖啡模式，防止/允许电脑睡眠
+    /// 切换咖啡模式，防止/允许电脑睡眠和屏保
     @MainActor
     @objc func toggleCoffee() {
         if coffeeMenuItem.state == .off {
-            // 开启咖啡模式，防止睡眠
-            let reasonForActivity = "保持清醒，防止电脑睡眠" as CFString
-            let result = IOPMAssertionCreateWithName(
+            // 开启咖啡模式，防止睡眠和屏保
+            let reasonForActivity = "保持清醒，防止电脑睡眠和屏保" as CFString
+            let result1 = IOPMAssertionCreateWithName(
                 kIOPMAssertionTypePreventSystemSleep as CFString,
                 IOPMAssertionLevel(kIOPMAssertionLevelOn),
                 reasonForActivity,
                 &coffeeAssertionID
             )
-            if result == kIOReturnSuccess {
+            let result2 = IOPMAssertionCreateWithName(
+                kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
+                IOPMAssertionLevel(kIOPMAssertionLevelOn),
+                reasonForActivity,
+                &coffeeDisplayAssertionID
+            )
+            if result1 == kIOReturnSuccess && result2 == kIOReturnSuccess {
                 coffeeMenuItem.state = .on
                 speedPanel.showCoffee = true
                 speedPanel.needsDisplay = true
             }
         } else {
-            // 关闭咖啡模式，允许睡眠
+            // 关闭咖啡模式，允许睡眠和屏保
             IOPMAssertionRelease(coffeeAssertionID)
+            IOPMAssertionRelease(coffeeDisplayAssertionID)
             coffeeMenuItem.state = .off
             speedPanel.showCoffee = false
             speedPanel.needsDisplay = true
@@ -167,6 +175,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 退出时如有必要释放 Assertion
         if coffeeMenuItem != nil && coffeeMenuItem.state == .on {
             IOPMAssertionRelease(coffeeAssertionID)
+            IOPMAssertionRelease(coffeeDisplayAssertionID)
         }
         NSApplication.shared.terminate(self)
     }
