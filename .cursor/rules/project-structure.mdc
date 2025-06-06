@@ -1,0 +1,22 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 项目结构说明
+
+本项目为 macOS 菜单栏网络、CPU、内存、电池电量监控工具，主入口和核心代码位于 [Sources/](mdc:Sources)。
+
+- 资源文件存放在 [Sources/Resources/](mdc:Sources/Resources)。
+- 应用图标为 [netspeed.icns](mdc:netspeed.icns)。
+- Swift 包管理配置见 [Package.swift](mdc:Package.swift)。
+- 应用主程序入口为 [main.swift](mdc:Sources/main.swift)（如存在）。
+- 安装和使用说明见 [README.md](mdc:README.md)。
+- 示例界面图片为 [demo.png](mdc:demo.png)。
+
+## 测试驱动开发（TDD）约定
+
+- 所有测试代码应放在 [Tests/](mdc:Tests) 目录下，测试 target 命名为 `*Tests`，如 `NetworkSpeedMonitorTests`。
+- 每新增或修改一个功能模块，需先在对应的测试 target 下编写或更新测试用例，再实现或修改功能代码，确保测试先行。
+- 测试文件通常与被测模块同名，如 `NetworkSpeedMonitor.swift` 的测试文件为 `NetworkSpeedMonitorTests.swift`。
+- 可使用 `swift test` 命令运行所有测试，确保每次提交前测试全部通过。
