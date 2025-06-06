@@ -1,5 +1,7 @@
 # NetworkSpeedMonitor
 
+![软件界面预览](demo.png)
+
 一个简洁美观的 macOS 菜单栏网络、CPU、内存、电池电量监控工具，支持窗口穿透、咖啡防睡眠与全局快捷键。
 
 ## 功能

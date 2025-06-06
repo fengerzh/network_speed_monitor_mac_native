@@ -42,6 +42,9 @@ PLIST="${CONTENTS_DIR}/Info.plist"
 echo "✅ 打包完成：${APP_DIR}"
 echo "你可以用 cp -R ${APP_DIR} /Applications/ 进行安装"
 
+# 清理旧包
+rm -f *.dmg
+
 # 生成 DMG 安装包
 DMG_NAME="${APP_NAME} ${VERSION}.dmg"
 create-dmg "${APP_DIR}" --overwrite --out="."
