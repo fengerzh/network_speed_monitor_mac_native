@@ -27,5 +27,9 @@ let package = Package(
                 .process("Resources/netspeed_menu.png")
             ]
         ),
+        .testTarget(
+            name: "NetworkSpeedMonitorTests",
+            dependencies: ["network_speed_monitor_mac_native"]
+        ),
     ]
 )
