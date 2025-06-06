@@ -9,7 +9,7 @@ let package = Package(
         .macOS(.v10_15)
     ],
     dependencies: [
-        .package(url: "https://github.com/soffes/HotKey.git", from: "0.1.2")
+        .package(url: "https://github.com/soffes/HotKey.git", from: "0.2.1")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
