@@ -1,40 +1,73 @@
 import Cocoa
 
+/// 重构后的速度面板视图，保持向后兼容
 class SpeedPanelView: NSView {
-    var timeString: String = "--:--"
-    var downloadSpeed: String = "--"
-    var uploadSpeed: String = "--"
-    var cpuUsage: String = "--"
-    var memoryUsage: String = "--"
-    var batteryLevel: String = "--"
-    var showCoffee: Bool = false
+    var timeString: String = "--:--" {
+        didSet { needsDisplay = true }
+    }
+    var downloadSpeed: String = "--" {
+        didSet { needsDisplay = true }
+    }
+    var uploadSpeed: String = "--" {
+        didSet { needsDisplay = true }
+    }
+    var cpuUsage: String = "--" {
+        didSet { needsDisplay = true }
+    }
+    var memoryUsage: String = "--" {
+        didSet { needsDisplay = true }
+    }
+    var batteryLevel: String = "--" {
+        didSet { needsDisplay = true }
+    }
+    var showCoffee: Bool = false {
+        didSet { needsDisplay = true }
+    }
     var onMouseEntered: (() -> Void)?
     private var trackingArea: NSTrackingArea?
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
-        // 背景
-        let bgColor = NSColor(calibratedWhite: 0.08, alpha: 0.5)
+
+        // 使用配置化的样式
+        drawBackground()
+        drawContent()
+    }
+
+    private func drawBackground() {
+        let bgColor = NSColor(calibratedWhite: AppConfiguration.Colors.background.white,
+                             alpha: AppConfiguration.Colors.background.alpha)
         bgColor.setFill()
-        let path = NSBezierPath(roundedRect: bounds, xRadius: 12, yRadius: 12)
+        let path = NSBezierPath(roundedRect: bounds,
+                               xRadius: AppConfiguration.UI.cornerRadius,
+                               yRadius: AppConfiguration.UI.cornerRadius)
         path.fill()
+    }
+
+    private func drawContent() {
         // 标题和内容样式
         let titleAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.boldSystemFont(ofSize: 12),
+            .font: NSFont.boldSystemFont(ofSize: AppConfiguration.Fonts.titleSize),
             .foregroundColor: NSColor.white
         ]
         let valueAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 18, weight: .bold),
-            .foregroundColor: NSColor(calibratedRed: 0.2, green: 0.85, blue: 1.0, alpha: 1.0)
+            .font: NSFont.monospacedDigitSystemFont(ofSize: AppConfiguration.Fonts.valueSize, weight: .bold),
+            .foregroundColor: NSColor(calibratedRed: AppConfiguration.Colors.primaryText.red,
+                                    green: AppConfiguration.Colors.primaryText.green,
+                                    blue: AppConfiguration.Colors.primaryText.blue,
+                                    alpha: AppConfiguration.Colors.primaryText.alpha)
         ]
         let unitAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .bold),
-            .foregroundColor: NSColor(calibratedRed: 0.2, green: 0.85, blue: 1.0, alpha: 1.0)
+            .font: NSFont.monospacedDigitSystemFont(ofSize: AppConfiguration.Fonts.unitSize, weight: .bold),
+            .foregroundColor: NSColor(calibratedRed: AppConfiguration.Colors.primaryText.red,
+                                    green: AppConfiguration.Colors.primaryText.green,
+                                    blue: AppConfiguration.Colors.primaryText.blue,
+                                    alpha: AppConfiguration.Colors.primaryText.alpha)
         ]
         // 纵向布局
         let startY: CGFloat = bounds.height - 28
-        let lineSpacing: CGFloat = 28
+        let lineSpacing = AppConfiguration.UI.lineSpacing
         // 时间
-        let timeFont = NSFont.monospacedDigitSystemFont(ofSize: 20, weight: .bold)
+        let timeFont = NSFont.monospacedDigitSystemFont(ofSize: AppConfiguration.Fonts.timeSize, weight: .bold)
         let timeColor = NSColor.systemOrange
         let timeAttrs: [NSAttributedString.Key: Any] = [
             .font: timeFont,
@@ -72,7 +105,7 @@ class SpeedPanelView: NSView {
         let arrowDown = NSAttributedString(string: "⬇️", attributes: arrowAttrs)
         let arrowUp = NSAttributedString(string: "⬆️", attributes: arrowAttrs)
         // 计算整体宽度
-        let spacing: CGFloat = 8
+        let spacing = AppConfiguration.UI.spacing
         let slash = NSAttributedString(string: "/", attributes: valueAttrs)
         let speedRowWidth = arrowDown.size().width + spacing + downloadStr.size().width + spacing + slash.size().width + spacing + uploadStr.size().width + spacing + arrowUp.size().width
         let baseY = startY - lineSpacing

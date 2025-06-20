@@ -2,10 +2,14 @@ import Foundation
 import SystemConfiguration
 import IOKit.ps
 
+/// 重构后的系统监控类，保持向后兼容
 class SystemMonitor {
     /// 记录上一次全系统 CPU 各核的 tick 计数，用于计算 CPU 占用率的差分。
     @MainActor
     static var lastSystemCPUTicks: [UInt32] = []
+
+    /// 内部使用的服务实例
+    private static let service = SystemMonitorService.shared
 
     /// 获取全系统 CPU 使用率（百分比，带一位小数）。
     /// - 返回：当前全系统 CPU 使用率的字符串（如 "23.5"），若采样异常则返回 "--"。
@@ -61,30 +65,14 @@ class SystemMonitor {
     /// 获取当前所有网络接口的累计收发字节数。
     /// - 返回：(rx, tx) 元组，分别为接收字节数和发送字节数（UInt64）。
     static func getNetworkBytes() -> (UInt64, UInt64) {
-        var ifaddrsPtr: UnsafeMutablePointer<ifaddrs>? = nil
-        var rx: UInt64 = 0
-        var tx: UInt64 = 0
-        if getifaddrs(&ifaddrsPtr) == 0, let firstAddr = ifaddrsPtr {
-            var ptr: UnsafeMutablePointer<ifaddrs>? = firstAddr
-            while let currentPtr = ptr {
-                let flags = Int32(currentPtr.pointee.ifa_flags)
-                // 只统计活跃的网络接口，排除回环接口
-                if (flags & IFF_UP) == IFF_UP && (flags & IFF_LOOPBACK) == 0,
-                   let data = currentPtr.pointee.ifa_data,
-                   let interfaceName = currentPtr.pointee.ifa_name {
-                    let name = String(cString: interfaceName)
-                    // 只统计真实的网络接口，排除虚拟接口
-                    if name.hasPrefix("en") || name.hasPrefix("wi") || name.hasPrefix("eth") {
-                        let networkData = data.load(as: if_data.self)
-                        rx += UInt64(networkData.ifi_ibytes)
-                        tx += UInt64(networkData.ifi_obytes)
-                    }
-                }
-                ptr = currentPtr.pointee.ifa_next
-            }
-            freeifaddrs(ifaddrsPtr)
+        let result = service.getNetworkBytes()
+        switch result {
+        case .success(let (rx, tx)):
+            return (rx, tx)
+        case .failure(let error):
+            Logger.shared.logError(error)
+            return (0, 0)
         }
-        return (rx, tx)
     }
 
     /// 格式化速度数值为带单位的字符串（只保留G、M、K单位）。
@@ -103,48 +91,28 @@ class SystemMonitor {
     }
 
     /// 获取系统物理内存总量（字节）和当前已用物理内存（字节）。
-    /// - 返回：(total, used) 元组，单位为字节（UInt64）。会在控制台打印详细信息用于调试。
+    /// - 返回：(total, used) 元组，单位为字节（UInt64）。
     @MainActor
     static func getMemoryInfo() -> (UInt64, UInt64) {
-        // 获取总物理内存
-        let total = ProcessInfo.processInfo.physicalMemory
-        // 获取当前已用物理内存
-        var stats = vm_statistics64()
-        var count = mach_msg_type_number_t(
-            MemoryLayout<vm_statistics64_data_t>.size / MemoryLayout<integer_t>.size)
-        let hostPort: mach_port_t = mach_host_self()
-        let result = withUnsafeMutablePointer(to: &stats) { statsPtr -> kern_return_t in
-            statsPtr.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { intPtr in
-                host_statistics64(hostPort, HOST_VM_INFO64, intPtr, &count)
-            }
+        let result = service.getMemoryInfo()
+        switch result {
+        case .success(let (total, used)):
+            return (total, used)
+        case .failure(let error):
+            Logger.shared.logError(error)
+            return (0, 0)
         }
-        var used: UInt64 = 0
-        if result == KERN_SUCCESS {
-            let pageSize = UInt64(NSPageSize())
-            let active = UInt64(stats.active_count) * pageSize
-            let wired = UInt64(stats.wire_count) * pageSize
-            let compressed = UInt64(stats.compressor_page_count) * pageSize
-            used = active + wired + compressed
-        }
-        return (total, used)
     }
 
     /// 获取当前电池电量百分比（如 87），若无电池则返回 "--"。
     static func getBatteryLevel() -> String {
-        guard let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
-              let sources = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef] else {
+        let result = service.getBatteryInfo()
+        switch result {
+        case .success(let batteryInfo):
+            return batteryInfo.displayText
+        case .failure(let error):
+            Logger.shared.logError(error)
             return "--"
         }
-        for ps in sources {
-            if let info = IOPSGetPowerSourceDescription(snapshot, ps)?.takeUnretainedValue() as? [String: Any] {
-                if let capacity = info[kIOPSCurrentCapacityKey as String] as? Int,
-                   let max = info[kIOPSMaxCapacityKey as String] as? Int {
-                    if max > 0 {
-                        return String(Int(Double(capacity) / Double(max) * 100))
-                    }
-                }
-            }
-        }
-        return "--"
     }
 }

@@ -25,6 +25,9 @@ let package = Package(
             resources: [
                 .process("Resources/netspeed.icns"),
                 .process("Resources/netspeed_menu.png")
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("BareSlashRegexLiterals")
             ]
         ),
         .testTarget(
