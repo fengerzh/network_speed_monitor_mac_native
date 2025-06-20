@@ -65,15 +65,22 @@ class SystemMonitor {
         var rx: UInt64 = 0
         var tx: UInt64 = 0
         if getifaddrs(&ifaddrsPtr) == 0, let firstAddr = ifaddrsPtr {
-            var ptr = firstAddr
-            while ptr.pointee.ifa_next != nil {
-                let flags = Int32(ptr.pointee.ifa_flags)
-                if (flags & IFF_UP) == IFF_UP, let data = ptr.pointee.ifa_data {
-                    let networkData = data.load(as: if_data.self)
-                    rx += UInt64(networkData.ifi_ibytes)
-                    tx += UInt64(networkData.ifi_obytes)
+            var ptr: UnsafeMutablePointer<ifaddrs>? = firstAddr
+            while let currentPtr = ptr {
+                let flags = Int32(currentPtr.pointee.ifa_flags)
+                // 只统计活跃的网络接口，排除回环接口
+                if (flags & IFF_UP) == IFF_UP && (flags & IFF_LOOPBACK) == 0,
+                   let data = currentPtr.pointee.ifa_data,
+                   let interfaceName = currentPtr.pointee.ifa_name {
+                    let name = String(cString: interfaceName)
+                    // 只统计真实的网络接口，排除虚拟接口
+                    if name.hasPrefix("en") || name.hasPrefix("wi") || name.hasPrefix("eth") {
+                        let networkData = data.load(as: if_data.self)
+                        rx += UInt64(networkData.ifi_ibytes)
+                        tx += UInt64(networkData.ifi_obytes)
+                    }
                 }
-                if let next = ptr.pointee.ifa_next { ptr = next } else { break }
+                ptr = currentPtr.pointee.ifa_next
             }
             freeifaddrs(ifaddrsPtr)
         }
