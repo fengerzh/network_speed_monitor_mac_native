@@ -15,8 +15,10 @@ class AppCoordinator {
     private var lastRx: UInt64 = 0
     private var lastTx: UInt64 = 0
     private var globalMouseMonitor: Any?
+    private var preferencesWindowController: PreferencesWindowController?
 
     private let powerManagement = PowerManagementService.shared
+    private let preferencesManager = UserPreferencesManager()
 
     // MARK: - Initialization
     init() {
@@ -33,6 +35,14 @@ class AppCoordinator {
         startMonitoring()
 
         Logger.shared.info("Application coordinator started successfully")
+
+        // 监听偏好设置变更
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(preferencesDidChange(_:)),
+            name: .userPreferencesDidChange,
+            object: nil
+        )
     }
 
     func stop() {
@@ -50,6 +60,11 @@ class AppCoordinator {
             NSEvent.removeMonitor(monitor)
             globalMouseMonitor = nil
         }
+
+        preferencesWindowController?.close()
+        preferencesWindowController = nil
+
+        NotificationCenter.default.removeObserver(self)
 
         Logger.shared.info("Application coordinator stopped")
     }
@@ -75,6 +90,10 @@ class AppCoordinator {
         menu.addItem(coffeeMenuItem!)
 
         menu.addItem(NSMenuItem.separator())
+
+        let preferencesMenuItem = NSMenuItem(title: "偏好设置...", action: #selector(showPreferences), keyEquivalent: ",")
+        preferencesMenuItem.target = self
+        menu.addItem(preferencesMenuItem)
 
         let aboutMenuItem = NSMenuItem(title: "关于", action: #selector(showAbout), keyEquivalent: "")
         aboutMenuItem.target = self
@@ -116,6 +135,7 @@ class AppCoordinator {
         window?.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
         speedPanel = SpeedPanelView(frame: NSRect(x: 0, y: 0, width: width, height: height))
+        speedPanel?.userPreferences = preferencesManager.preferences
         speedPanel?.onMouseEntered = { [weak self] in
             self?.hideWindowOnHover()
         }
@@ -145,8 +165,14 @@ class AppCoordinator {
 
     private func startMonitoring() {
         (lastRx, lastTx) = SystemMonitor.getNetworkBytes()
-        timer = Timer.scheduledTimer(timeInterval: AppConfiguration.Monitoring.updateInterval, target: self, selector: #selector(updateAll), userInfo: nil, repeats: true)
+        let interval = preferencesManager.preferences.updateInterval
+        timer = Timer.scheduledTimer(timeInterval: interval, target: self, selector: #selector(updateAll), userInfo: nil, repeats: true)
         updateAll()
+    }
+
+    private func restartMonitoring() {
+        timer?.invalidate()
+        startMonitoring()
     }
     
     // MARK: - Action Handlers
@@ -164,8 +190,9 @@ class AppCoordinator {
         var uploadSpeed: Double? = nil
 
         if rx >= lastRx && tx >= lastTx && (lastRx != 0 || lastTx != 0) {
-            downloadSpeed = Double(rx - lastRx) / AppConfiguration.Monitoring.updateInterval
-            uploadSpeed = Double(tx - lastTx) / AppConfiguration.Monitoring.updateInterval
+            let interval = preferencesManager.preferences.updateInterval
+            downloadSpeed = Double(rx - lastRx) / interval
+            uploadSpeed = Double(tx - lastTx) / interval
         }
 
         lastRx = rx
@@ -242,6 +269,16 @@ class AppCoordinator {
         }
     }
 
+    @objc private func showPreferences() {
+        if preferencesWindowController == nil {
+            preferencesWindowController = PreferencesWindowController(preferencesManager: preferencesManager)
+        }
+
+        preferencesWindowController?.showWindow(nil)
+        preferencesWindowController?.window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     @objc private func showAbout() {
         let alert = NSAlert()
         alert.messageText = AppConfiguration.appName
@@ -268,5 +305,27 @@ class AppCoordinator {
         )
 
         window.setFrameOrigin(newOrigin)
+    }
+
+    @objc private func preferencesDidChange(_ notification: Notification) {
+        Logger.shared.info("Preferences changed, updating application")
+
+        // 更新SpeedPanel的用户偏好设置
+        speedPanel?.userPreferences = preferencesManager.preferences
+
+        // 重启监控以应用新的刷新间隔
+        restartMonitoring()
+
+        // 更新窗口置顶设置
+        if let window = window {
+            if preferencesManager.preferences.windowAlwaysOnTop {
+                window.level = .floating
+            } else {
+                window.level = .normal
+            }
+        }
+
+        // 更新UI以反映新的偏好设置
+        updateAll()
     }
 }

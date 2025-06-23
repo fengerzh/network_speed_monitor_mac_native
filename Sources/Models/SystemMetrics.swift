@@ -1,5 +1,77 @@
 import Foundation
 
+/// 用户偏好设置数据模型
+struct UserPreferences: Codable {
+    // MARK: - 基本设置
+    var updateInterval: TimeInterval = 3.0
+    var enabledMetrics: EnabledMetrics = EnabledMetrics()
+    var autoStart: Bool = false
+    var windowAlwaysOnTop: Bool = true
+
+    // MARK: - 外观设置
+    var appearance: AppearanceSettings = AppearanceSettings()
+
+    // MARK: - 快捷键设置 (暂时只显示，不支持自定义)
+    var hotkeys: HotkeySettings = HotkeySettings()
+
+    /// 获取默认设置
+    static func defaultSettings() -> UserPreferences {
+        return UserPreferences()
+    }
+}
+
+/// 启用的监控指标
+struct EnabledMetrics: Codable {
+    var networkSpeed: Bool = true
+    var cpuUsage: Bool = true
+    var memoryUsage: Bool = true
+    var batteryLevel: Bool = true
+    var timeDisplay: Bool = true
+}
+
+/// 外观设置
+struct AppearanceSettings: Codable {
+    var backgroundAlpha: Double = 0.5
+    var colorTheme: ColorTheme = .blue
+
+    /// 颜色主题枚举
+    enum ColorTheme: String, CaseIterable, Codable {
+        case blue = "blue"
+        case green = "green"
+        case orange = "orange"
+
+        var displayName: String {
+            switch self {
+            case .blue: return "蓝色"
+            case .green: return "绿色"
+            case .orange: return "橙色"
+            }
+        }
+
+        var primaryColor: (red: Double, green: Double, blue: Double, alpha: Double) {
+            switch self {
+            case .blue:
+                return (red: 0.2, green: 0.85, blue: 1.0, alpha: 1.0)
+            case .green:
+                return (red: 0.2, green: 1.0, blue: 0.4, alpha: 1.0)
+            case .orange:
+                return (red: 1.0, green: 0.6, blue: 0.2, alpha: 1.0)
+            }
+        }
+    }
+}
+
+/// 快捷键设置 (暂时只用于显示)
+struct HotkeySettings: Codable {
+    let toggleVisibility: String
+    let toggleCoffeeMode: String
+
+    init() {
+        self.toggleVisibility = "⌃⌥⌘T"
+        self.toggleCoffeeMode = "⌃⌥⌘K"
+    }
+}
+
 /// 系统指标数据模型
 struct SystemMetrics {
     let timestamp: Date
@@ -7,7 +79,7 @@ struct SystemMetrics {
     let cpuUsage: CPUUsage
     let memoryInfo: MemoryInfo
     let batteryInfo: BatteryInfo
-    
+
     init(networkStats: NetworkStats, cpuUsage: CPUUsage, memoryInfo: MemoryInfo, batteryInfo: BatteryInfo) {
         self.timestamp = Date()
         self.networkStats = networkStats

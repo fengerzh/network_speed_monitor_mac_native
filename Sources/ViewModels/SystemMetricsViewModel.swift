@@ -48,7 +48,7 @@ class SystemMetricsViewModel: ObservableObject {
         
         Logger.shared.info("Starting metrics update timer")
         updateTimer = Timer.scheduledTimer(withTimeInterval: AppConfiguration.Monitoring.updateInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 await self?.updateMetrics()
             }
         }
