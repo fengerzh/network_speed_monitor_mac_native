@@ -18,6 +18,7 @@ class PreferencesWindowController: NSWindowController {
     private var memoryUsageCheckbox: NSButton!
     private var batteryLevelCheckbox: NSButton!
     private var timeDisplayCheckbox: NSButton!
+    private var networkAutoSwitchCheckbox: NSButton!
 
     // 外观设置
     private var backgroundAlphaSlider: NSSlider!
@@ -133,12 +134,14 @@ class PreferencesWindowController: NSWindowController {
         memoryUsageCheckbox = createCheckbox(title: "内存使用", action: #selector(metricsCheckboxChanged(_:)))
         batteryLevelCheckbox = createCheckbox(title: "电池电量", action: #selector(metricsCheckboxChanged(_:)))
         timeDisplayCheckbox = createCheckbox(title: "时间显示", action: #selector(metricsCheckboxChanged(_:)))
+        networkAutoSwitchCheckbox = createCheckbox(title: "网络自动切换", action: #selector(metricsCheckboxChanged(_:)))
         
         section.addArrangedSubview(networkSpeedCheckbox)
         section.addArrangedSubview(cpuUsageCheckbox)
         section.addArrangedSubview(memoryUsageCheckbox)
         section.addArrangedSubview(batteryLevelCheckbox)
         section.addArrangedSubview(timeDisplayCheckbox)
+        section.addArrangedSubview(networkAutoSwitchCheckbox)
         
         return section
     }
@@ -271,6 +274,7 @@ class PreferencesWindowController: NSWindowController {
         memoryUsageCheckbox?.state = preferences.enabledMetrics.memoryUsage ? .on : .off
         batteryLevelCheckbox?.state = preferences.enabledMetrics.batteryLevel ? .on : .off
         timeDisplayCheckbox?.state = preferences.enabledMetrics.timeDisplay ? .on : .off
+        networkAutoSwitchCheckbox?.state = preferences.enabledMetrics.networkAutoSwitch ? .on : .off
         
         // 外观设置
         backgroundAlphaSlider?.doubleValue = preferences.appearance.backgroundAlpha
@@ -363,6 +367,8 @@ class PreferencesWindowController: NSWindowController {
             metrics.batteryLevel = sender.state == .on
         case timeDisplayCheckbox:
             metrics.timeDisplay = sender.state == .on
+        case networkAutoSwitchCheckbox:
+            metrics.networkAutoSwitch = sender.state == .on
         default:
             return
         }

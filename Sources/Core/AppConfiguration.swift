@@ -4,7 +4,7 @@ import Foundation
 struct AppConfiguration {
     // MARK: - App Info
     static let appName = "NetworkSpeedMonitor"
-    static let appVersion = "1.1.0"
+    static let appVersion = "1.2.0"
     
     // MARK: - UI Configuration
     struct UI {

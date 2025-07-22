@@ -126,6 +126,15 @@ class UserPreferencesManager {
         return savePreferences(newPreferences)
     }
     
+    /// 更新网络自动切换设置
+    /// - Parameter enabled: 是否启用网络自动切换
+    /// - Returns: 操作结果
+    func updateNetworkAutoSwitch(_ enabled: Bool) -> Result<Void, AppError> {
+        var newPreferences = _preferences
+        newPreferences.enabledMetrics.networkAutoSwitch = enabled
+        return savePreferences(newPreferences)
+    }
+    
     // MARK: - 验证方法
     
     /// 验证刷新间隔是否有效

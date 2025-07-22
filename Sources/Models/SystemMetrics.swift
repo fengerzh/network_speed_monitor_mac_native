@@ -27,6 +27,7 @@ struct EnabledMetrics: Codable {
     var memoryUsage: Bool = true
     var batteryLevel: Bool = true
     var timeDisplay: Bool = true
+    var networkAutoSwitch: Bool = false  // 新增：网络自动切换功能
 }
 
 /// 外观设置

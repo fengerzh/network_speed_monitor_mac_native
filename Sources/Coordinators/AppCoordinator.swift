@@ -19,6 +19,7 @@ class AppCoordinator {
 
     private let powerManagement = PowerManagementService.shared
     private let preferencesManager = UserPreferencesManager()
+    private let networkMonitor = NetworkMonitorService.shared
 
     // MARK: - Initialization
     init() {
@@ -33,6 +34,7 @@ class AppCoordinator {
         setupWindow()
         setupHotKeys()
         startMonitoring()
+        startNetworkMonitoring()
 
         Logger.shared.info("Application coordinator started successfully")
 
@@ -52,6 +54,7 @@ class AppCoordinator {
         timer = nil
 
         powerManagement.cleanup()
+        stopNetworkMonitoring()
 
         hotKey = nil
         coffeeHotKey = nil
@@ -173,6 +176,20 @@ class AppCoordinator {
     private func restartMonitoring() {
         timer?.invalidate()
         startMonitoring()
+    }
+    
+    private func startNetworkMonitoring() {
+        if preferencesManager.preferences.enabledMetrics.networkAutoSwitch {
+            networkMonitor.startMonitoring()
+            Logger.shared.info("Network auto-switch monitoring started")
+        }
+    }
+    
+    private func stopNetworkMonitoring() {
+        if networkMonitor.isMonitoring {
+            networkMonitor.stopMonitoring()
+            Logger.shared.info("Network auto-switch monitoring stopped")
+        }
     }
     
     // MARK: - Action Handlers
@@ -322,6 +339,16 @@ class AppCoordinator {
                 window.level = .floating
             } else {
                 window.level = .normal
+            }
+        }
+
+        // 处理网络自动切换设置的变更
+        if let userInfo = notification.userInfo,
+           let preferences = userInfo["preferences"] as? UserPreferences {
+            if preferences.enabledMetrics.networkAutoSwitch {
+                startNetworkMonitoring()
+            } else {
+                stopNetworkMonitoring()
             }
         }
 
