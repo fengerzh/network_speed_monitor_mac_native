@@ -16,6 +16,7 @@ class AppCoordinator {
     private var lastTx: UInt64 = 0
     private var globalMouseMonitor: Any?
     private var preferencesWindowController: PreferencesWindowController?
+    private var isHiddenByHotKey: Bool = false  // 标记是否由热键隐藏
 
     private let powerManagement = PowerManagementService.shared
     private let preferencesManager = UserPreferencesManager()
@@ -244,13 +245,25 @@ class AppCoordinator {
 
         if window.isVisible {
             window.orderOut(nil)
+            isHiddenByHotKey = true  // 标记为热键隐藏
         } else {
             window.orderFront(nil)
+            isHiddenByHotKey = false
+            // 清除可能存在的鼠标监控
+            if let monitor = globalMouseMonitor {
+                NSEvent.removeMonitor(monitor)
+                globalMouseMonitor = nil
+            }
         }
     }
 
     private func hideWindowOnHover() {
         guard let window = window else { return }
+        
+        // 如果已经是热键隐藏状态，不要重复隐藏
+        if isHiddenByHotKey {
+            return
+        }
 
         window.orderOut(nil)
 
@@ -263,6 +276,7 @@ class AppCoordinator {
             if !windowFrame.contains(mouseLocation) {
                 Task { @MainActor in
                     window.orderFront(nil)
+                    self.isHiddenByHotKey = false
                     if let monitor = self.globalMouseMonitor {
                         NSEvent.removeMonitor(monitor)
                         self.globalMouseMonitor = nil
