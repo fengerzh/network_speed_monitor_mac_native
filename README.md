@@ -1,3 +1,5 @@
+
+
 # NetworkSpeedMonitor
 
 ![软件界面预览](demo.png)
@@ -138,7 +140,7 @@
 ## 📄 关于
 
 - **软件名称**：NetworkSpeedMonitor
-- **当前版本**：v1.1.0
+- **当前版本**：v1.2.0
 - **作者**：zhangjing
 - **开源协议**：MIT License
 - **项目地址**：[GitHub](https://github.com/fengerzh/network_speed_monitor_mac_native)
